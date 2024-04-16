@@ -1,73 +1,60 @@
 #include <arpa/inet.h> // inet_addr()
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <strings.h> // bzero()
+#include <string.h> // bzero()
 #include <sys/socket.h>
 #include <unistd.h> // read(), write(), close()
-#include <pthread.h> // pthread_create(), pthread_join()
-#include <math.h> // factorial calculation
+#include <time.h> // clock_gettime()
 #include <sys/types.h> // pid_t
-#include <sys/wait.h> // waitpid()
-#include <time.h> // time()
 
 #define MAX 1024
 #define PORT 6667
 #define SA struct sockaddr
 
-void* func(void* sockfd) {
-    int connfd = *((int*)sockfd);
-    char buff[MAX];
-    int n;
+double tiempo_transcurrido(struct timespec *inicio, struct timespec *fin) {
+    return (fin->tv_sec - inicio->tv_sec) * 1e9 + (fin->tv_nsec - inicio->tv_nsec);
+}
+
+void func(int* sockfd) {
+    struct timespec start, end;
+    int connfd = *sockfd;
+    int buff;
     for (;;) {
-        bzero(buff, sizeof(buff));
-        int numBytes = read(connfd, buff, sizeof(buff));
+        int numBytes = read(connfd, &buff, sizeof(int));
         if (numBytes <= 0) {
             printf("El cliente ha cerrado la conexión.\n");
             break;
         }
-        // Verificar si el mensaje es un número válido
-        char *endptr;
-        long num = strtol(buff, &endptr, 10);
-        if (endptr == buff) {
-            printf("Mensaje no válido recibido: %s\n", buff);
-            continue;
-        }
-        printf("Número recibido: %ld\n", num);
+        printf("Número recibido: %d\n", buff);
 
         // Calcular el factorial
-        time_t start_time = time(NULL);
+        clock_gettime(CLOCK_MONOTONIC, &start);
         int factorial = 1;
-        for(int i = 1; i <= num; ++i) {
+        for(int i = 1; i <= buff; ++i) {
             factorial *= i;
         }
-        time_t end_time = time(NULL);
+        clock_gettime(CLOCK_MONOTONIC, &end);
 
         // Obtener el tiempo de ejecución
-        double execution_time = difftime(end_time, start_time);
-
-        // Obtener los PID del proceso hijo y padre
-        pid_t child_pid = getpid();
-        pid_t parent_pid = getppid();
+        double execution_time = tiempo_transcurrido(&start, &end);
 
         // Enviar la respuesta al cliente
-        sprintf(buff, "\nFactorial de %ld: %d\nTiempo de ejecución: %.2f segundos\nPID del proceso hijo: %d\nPID del proceso padre: %d\n", num, factorial, execution_time, child_pid, parent_pid);
-        write(connfd, buff, sizeof(buff));
+        char response[MAX];
+        sprintf(response, "Factorial de %d: %d\nTiempo de ejecución: %.0f nanosegundos\nPID del proceso hijo: %d\n", buff, factorial, execution_time, getpid());
+        write(connfd, response, sizeof(response));
 
-        if (strncmp("SALIR", buff, 4) == 0) {
+        if (strncmp("SALIR", response, 4) == 0) {
             printf("Salgo del servidor...\n");
             break;
         }
     }
     close(connfd);
-    pthread_exit(NULL);
+    exit(0);
 }
 
 int main() {
     int sockfd, connfd;
     struct sockaddr_in servaddr, cli;
-    pthread_t thread_id;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -106,10 +93,20 @@ int main() {
         else
             printf("El servidor acepta al cliente ...\n");
 
-        if (pthread_create(&thread_id, NULL, func, &connfd) != 0)
-            printf("Falla al crear el hilo...\n");
-        else
-            printf("Hilo asignado al cliente...\n");
+        int pid = fork();
+        if (pid < 0) {
+            printf("Falla al crear el proceso...\n");
+        }
+        else if (pid == 0) { // Proceso hijo
+            close(sockfd); // Cerrar el descriptor de archivo del servidor en el proceso hijo
+            func(&connfd);
+        }
+        else { // Proceso padre
+            char response[MAX];
+            sprintf(response, "PID del proceso padre: %d\n", getpid());
+            write(connfd, response, sizeof(response));
+            close(connfd); // Cerrar el socket en el proceso padre
+        }
     }
 
     close(sockfd);

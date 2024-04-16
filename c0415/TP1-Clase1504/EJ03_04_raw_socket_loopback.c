@@ -13,16 +13,17 @@
 #define BUFFER_SIZE 65536
 
 void procesar_paquete(unsigned char *buffer, int size) {
+    printf("-----------------------------------------\n");
     printf("Paquete recibido - Longitud: %d bytes\n", size);
 
     struct ethhdr *encabezado_eth = (struct ethhdr *)buffer;
     printf("Encabezado Ethernet\n");
     printf("  Dirección MAC de origen: %.2X:%.2X:%.2X:%.2X:%.2X:%.2X\n",
-           encabezado_eth->h_source[0], encabezado_eth->h_source[1], encabezado_eth->h_source[2],
-           encabezado_eth->h_source[3], encabezado_eth->h_source[4], encabezado_eth->h_source[5]);
+            encabezado_eth->h_source[0], encabezado_eth->h_source[1], encabezado_eth->h_source[2],
+            encabezado_eth->h_source[3], encabezado_eth->h_source[4], encabezado_eth->h_source[5]);
     printf("  Dirección MAC de destino: %.2X:%.2X:%.2X:%.2X:%.2X:%.2X\n",
-           encabezado_eth->h_dest[0], encabezado_eth->h_dest[1], encabezado_eth->h_dest[2],
-           encabezado_eth->h_dest[3], encabezado_eth->h_dest[4], encabezado_eth->h_dest[5]);
+            encabezado_eth->h_dest[0], encabezado_eth->h_dest[1], encabezado_eth->h_dest[2],
+            encabezado_eth->h_dest[3], encabezado_eth->h_dest[4], encabezado_eth->h_dest[5]);
     printf("  Tipo de protocolo: 0x%.4X\n", ntohs(encabezado_eth->h_proto));
 
     struct iphdr *encabezado_ip = (struct iphdr *)(buffer + sizeof(struct ethhdr));

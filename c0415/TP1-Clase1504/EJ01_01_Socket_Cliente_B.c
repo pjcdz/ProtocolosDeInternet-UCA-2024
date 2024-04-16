@@ -1,28 +1,33 @@
-#include <arpa/inet.h> // inet_addr()
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <strings.h> // bzero()
-#include <sys/socket.h>
 #include <unistd.h> // read(), write(), close()
+#include <string.h> // bzero()
+#include <sys/socket.h>
+#include <netinet/in.h> // struct sockaddr_in
+#include <arpa/inet.h> // inet_addr()
 
 #define MAX 1024
 #define PORT 6667
 #define SA struct sockaddr
 
 void func(int sockfd) {
-    char buff[MAX];
-    int n;
-    for (int num = 1; num <= 10; num++) {
-        bzero(buff, sizeof(buff));
-        sprintf(buff, "%d", num);
-        write(sockfd, buff, sizeof(buff));
-        bzero(buff, sizeof(buff));
-        read(sockfd, buff, sizeof(buff));
-        printf("%s\n", buff);
+    char buffer[MAX] = {0};
+    int leovalor;
+
+    for (int i = 1; i <= 5; i++) {  // Cambiado de 10 a 5
+        // Enviar número al servidor
+        write(sockfd, &i, sizeof(int));
+
+        // Leer respuesta del servidor
+        leovalor = read(sockfd, buffer, MAX);
+        printf("%s\n", buffer);
+
+        printf("Enviado: %d - ", i);
     }
-    printf("cerrando socket\n");
+
+    // Leer respuesta final del servidor
+    leovalor = read(sockfd, buffer, MAX);
+    printf("%s\n", buffer);
 }
 
 int main() {
