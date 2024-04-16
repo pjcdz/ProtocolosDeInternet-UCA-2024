@@ -6,6 +6,8 @@
 #include <netinet/in.h> // struct sockaddr_in
 #include <arpa/inet.h> // inet_addr()
 
+// sudo ./EJ01_01_Socket_Cliente_B
+
 #define MAX 1024
 #define PORT 6667
 #define SA struct sockaddr

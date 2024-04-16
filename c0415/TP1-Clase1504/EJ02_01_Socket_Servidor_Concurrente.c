@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <time.h>
 
+// sudo ./EJ02_01_Socket_Servidor_Concurrente
+
 #define PORT 6667
 #define BUFFER_SIZE 1024
 

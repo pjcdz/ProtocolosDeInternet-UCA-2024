@@ -10,6 +10,9 @@
 #include <net/ethernet.h>
 #include <netpacket/packet.h>
 
+// sudo ./EJ03_04_raw_socket_loopback
+// ping google.com
+
 #define BUFFER_SIZE 65536
 
 void procesar_paquete(unsigned char *buffer, int size) {

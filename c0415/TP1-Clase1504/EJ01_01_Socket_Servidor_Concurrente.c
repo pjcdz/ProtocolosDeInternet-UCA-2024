@@ -7,6 +7,8 @@
 #include <time.h> // clock_gettime()
 #include <sys/types.h> // pid_t
 
+// sudo ./EJ01_01_Socket_Servidor_Concurrente
+
 #define MAX 1024
 #define PORT 6667
 #define SA struct sockaddr

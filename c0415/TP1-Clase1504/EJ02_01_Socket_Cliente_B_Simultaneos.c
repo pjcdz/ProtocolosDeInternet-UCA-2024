@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <time.h>
 
+// sudo ./EJ02_01_Socket_Cliente_B_Simultaneos
+
 #define PORT 6667
 #define BUFFER_SIZE 1024
 #define NUM_CONNECTIONS 5
