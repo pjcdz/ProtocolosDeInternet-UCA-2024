@@ -74,8 +74,8 @@ int main() {
             close(sock);
             exit(EXIT_SUCCESS);
         } else {
+            // No hacemos sleep aquí, permitimos que todos los procesos hijos se ejecuten simultáneamente
             wait(NULL);
-            sleep(2);
         }
     }
 

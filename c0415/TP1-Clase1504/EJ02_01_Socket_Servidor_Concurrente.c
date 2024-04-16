@@ -11,6 +11,10 @@
 #define PORT 6667
 #define BUFFER_SIZE 1024
 
+double tiempo_transcurrido(struct timespec *inicio, struct timespec *fin) {
+    return (fin->tv_sec - inicio->tv_sec) * 1e9 + (fin->tv_nsec - inicio->tv_nsec);
+}
+
 long factorial(int n) {
     if (n == 0)
         return 1;
@@ -18,40 +22,38 @@ long factorial(int n) {
         return n * factorial(n-1);
 }
 
-void *proceso_hijo(void *socket_desc) {
-    printf("PID del proceso hijo: %d\n", getpid());
-    printf("ID del hilo: %lu\n", pthread_self());
-    int sock = *(int*)socket_desc;
+void proceso_hijo(int sock) {
     char buffer[BUFFER_SIZE];
-    int num;
-    long fact;
     struct timespec start, end;
-    double tiempo_t;
 
     while (1) {
-        bzero(buffer, BUFFER_SIZE);
-        read(sock, buffer, BUFFER_SIZE);
-        if (!strlen(buffer)) {
+        int bytes_recibidos = recv(sock, buffer, BUFFER_SIZE, 0);
+        if (bytes_recibidos > 0) {
+            buffer[bytes_recibidos] = '\0';
+            int num = atoi(buffer);
+            long fact = factorial(num);
+            // Formatear el mensaje para incluir el tiempo de respuesta
+            clock_gettime(CLOCK_MONOTONIC, &start);
+            sprintf(buffer, "%ld", fact);
+            write(sock, buffer, strlen(buffer));
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            double tiempo_t = tiempo_transcurrido(&start, &end);
+            sprintf(buffer, "%f", tiempo_t);
+            write(sock, buffer, strlen(buffer));
+        } else if (bytes_recibidos == 0) {
             printf("No hay más datos\n");
             break;
+        } else {
+            perror("recv");
+            break;
         }
-        num = atoi(buffer);
-        printf("Número recibido: %d\n", num);
-        fact = factorial(num);
-        sprintf(buffer, "%ld", fact);
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        write(sock, buffer, strlen(buffer));
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        tiempo_t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-        printf("Tiempo de respuesta: %f segundos\n", tiempo_t);
     }
+
     close(sock);
-    free(socket_desc);
-    pthread_exit(NULL);
 }
 
 int main() {
-    int server_sock, client_sock, *new_sock;
+    int server_sock, client_sock;
     struct sockaddr_in server, client;
     socklen_t client_len = sizeof(client);
     int opt = 1;
@@ -78,12 +80,17 @@ int main() {
     printf("Socket en modo escucha\n");
     while ((client_sock = accept(server_sock, (struct sockaddr *)&client, &client_len))) {
         printf("Conexión establecida con %s\n", inet_ntoa(client.sin_addr));
-        pthread_t sniffer_thread;
-        new_sock = malloc(1);
-        *new_sock = client_sock;
-        if (pthread_create(&sniffer_thread, NULL, proceso_hijo, (void*)new_sock) < 0) {
-            perror("No se pudo crear el hilo");
+        int pid = fork();
+        if (pid < 0) {
+            perror("No se pudo crear el proceso");
             exit(EXIT_FAILURE);
+        }
+        if (pid == 0) { // Proceso hijo
+            close(server_sock);
+            proceso_hijo(client_sock);
+            exit(0);
+        } else { // Proceso padre
+            close(client_sock);
         }
     }
     if (client_sock < 0) {
