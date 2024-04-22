@@ -56,16 +56,7 @@ int main() {
                 int bytes_recibidos = recv(sock, buffer, BUFFER_SIZE, 0);
                 if (bytes_recibidos > 0) {
                     buffer[bytes_recibidos] = '\0';
-                    // Dividir la respuesta en el factorial y el tiempo de respuesta
-                    char *token = strtok(buffer, " ");
-                    long fact = atol(token);
-                    bytes_recibidos = recv(sock, buffer, BUFFER_SIZE, 0);
-                    buffer[bytes_recibidos] = '\0';
-                    token = strtok(buffer, " ");
-                    double tiempo_t = atof(token);
-                    printf("Enviado: %d - Factorial de %d: %ld\n", num, num, fact);
-                    printf("Tiempo de ejecución: %.0f nanosegundos\n", tiempo_t);
-                    printf("PID del proceso hijo: %d\n", getpid());
+                    printf("%s\n", buffer);
                 } else if (bytes_recibidos == 0) {
                     printf("Conexión cerrada por el servidor\n");
                 } else {

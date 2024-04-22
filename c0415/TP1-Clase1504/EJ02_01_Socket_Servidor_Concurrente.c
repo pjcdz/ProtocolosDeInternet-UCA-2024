@@ -10,6 +10,7 @@
 
 // sudo ./EJ02_01_Socket_Servidor_Concurrente
 
+#define MAX 1024
 #define PORT 6667
 #define BUFFER_SIZE 1024
 
@@ -24,34 +25,33 @@ long factorial(int n) {
         return n * factorial(n-1);
 }
 
+// EJ02_01_Socket_Servidor_Concurrente.c
 void proceso_hijo(int sock) {
     char buffer[BUFFER_SIZE];
     struct timespec start, end;
+    int buff;
 
-    while (1) {
-        int bytes_recibidos = recv(sock, buffer, BUFFER_SIZE, 0);
-        if (bytes_recibidos > 0) {
-            buffer[bytes_recibidos] = '\0';
-            int num = atoi(buffer);
-            long fact = factorial(num);
-            // Formatear el mensaje para incluir el tiempo de respuesta
-            clock_gettime(CLOCK_MONOTONIC, &start);
-            sprintf(buffer, "%ld", fact);
-            write(sock, buffer, strlen(buffer));
-            clock_gettime(CLOCK_MONOTONIC, &end);
-            double tiempo_t = tiempo_transcurrido(&start, &end);
-            sprintf(buffer, "%f", tiempo_t);
-            write(sock, buffer, strlen(buffer));
-        } else if (bytes_recibidos == 0) {
-            printf("No hay más datos\n");
-            break;
-        } else {
-            perror("recv");
-            break;
+    for (int num = 1; num <= 5; ++num) {
+        // Leer el número enviado por el cliente
+        read(sock, buffer, BUFFER_SIZE);
+        buff = atoi(buffer);
+
+        // Calcular el factorial
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        int factorial = 1;
+        for(int i = 1; i <= buff; ++i) {
+            factorial *= i;
         }
-    }
+        clock_gettime(CLOCK_MONOTONIC, &end);
 
-    close(sock);
+        // Obtener el tiempo de ejecución
+        double execution_time = tiempo_transcurrido(&start, &end);
+
+        // Enviar la respuesta al cliente
+        char response[MAX];
+        sprintf(response, "Factorial de %d: %d\nTiempo de ejecución: %.0f nanosegundos\nPID del proceso hijo: %d\n", buff, factorial, execution_time, getpid());
+        write(sock, response, sizeof(response));
+    }
 }
 
 int main() {
