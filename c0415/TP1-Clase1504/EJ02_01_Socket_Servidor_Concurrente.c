@@ -31,9 +31,8 @@ void proceso_hijo(int sock) {
     struct timespec start, end;
     int buff;
 
-    for (int num = 1; num <= 5; ++num) {
-        // Leer el número enviado por el cliente
-        read(sock, buffer, BUFFER_SIZE);
+    // Leer el número enviado por el cliente
+    while (read(sock, buffer, BUFFER_SIZE) > 0) {
         buff = atoi(buffer);
 
         // Calcular el factorial
